@@ -13,6 +13,7 @@ export default function RegisterPage() {
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
 
   const handleRegister = async () => {
     if (!form.name || !form.email || !form.password || !form.confirm) {
@@ -32,7 +33,7 @@ export default function RegisterPage() {
     setError('');
 
     const supabase = createClient();
-    const { error: authError } = await supabase.auth.signUp({
+    const { data, error: authError } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
       options: {
@@ -40,16 +41,27 @@ export default function RegisterPage() {
       },
     });
 
+    setLoading(false);
+
     if (authError) {
-      setError(authError.message === 'User already registered'
-        ? 'Email sudah terdaftar. Coba masuk ya.'
-        : 'Gagal mendaftar. Coba lagi.');
-      setLoading(false);
+      if (authError.message.toLowerCase().includes('already registered') ||
+          authError.message.toLowerCase().includes('already exists')) {
+        setError('Email sudah terdaftar. Coba masuk ya.');
+      } else {
+        setError(`Gagal mendaftar: ${authError.message}`);
+      }
       return;
     }
 
     localStorage.setItem('mindora_onboarded', '1');
-    router.replace('/dashboard');
+
+    if (data.session) {
+      // Email confirmation disabled — logged in immediately
+      router.replace('/dashboard');
+    } else {
+      // Email confirmation required — show waiting screen
+      setAwaitingConfirmation(true);
+    }
   };
 
   const handleGoogleLogin = async () => {
@@ -59,6 +71,35 @@ export default function RegisterPage() {
       options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
   };
+
+  // ── Email confirmation waiting screen ──
+  if (awaitingConfirmation) {
+    return (
+      <div className="mobile-shell bg-white flex flex-col items-center justify-center px-8 text-center gap-5">
+        <span className="text-7xl">📬</span>
+        <h2 className="font-boogaloo text-[28px] text-[#1A3448]">Cek emailmu!</h2>
+        <p className="text-sm text-[#6B7280] leading-relaxed">
+          Kami kirim link konfirmasi ke <strong>{form.email}</strong>.
+          Klik link tersebut, lalu kembali ke sini untuk masuk.
+        </p>
+        <div
+          className="w-full px-4 py-3.5 rounded-2xl text-sm text-[#6B7280] leading-relaxed text-left"
+          style={{ background: '#FFF9F0', border: '1px solid #F5E6D3' }}
+        >
+          💡 <strong>Tip:</strong> Tidak dapat email? Cek folder spam, atau hubungi kami.
+        </div>
+        <Button onClick={() => router.push('/auth/login')}>
+          Sudah konfirmasi? Masuk
+        </Button>
+        <button
+          onClick={() => setAwaitingConfirmation(false)}
+          className="text-sm text-[#6B7280] bg-transparent border-none cursor-pointer font-poppins"
+        >
+          Kembali
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="mobile-shell bg-white">
@@ -116,14 +157,12 @@ export default function RegisterPage() {
           </Button>
         </div>
 
-        {/* Divider */}
         <div className="flex items-center gap-3 my-5">
           <div className="flex-1 h-px bg-[#E5E7EB]" />
           <span className="text-[13px] text-gray-400">atau</span>
           <div className="flex-1 h-px bg-[#E5E7EB]" />
         </div>
 
-        {/* Google */}
         <button
           onClick={handleGoogleLogin}
           className="w-full py-3.5 flex items-center justify-center gap-2.5 bg-white border-[1.5px] border-[#E5E7EB] rounded-2xl cursor-pointer font-poppins text-[15px] text-[#1A3448] hover:bg-gray-50 transition-colors"

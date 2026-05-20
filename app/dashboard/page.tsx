@@ -41,14 +41,17 @@ export default function HomePage() {
         .from('profiles')
         .select('full_name, is_premium, streak')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();   // maybeSingle() returns null instead of error when row missing
 
       if (profile) {
         setUserName(profile.full_name?.split(' ')[0] ?? 'Kamu');
         setIsPremium(profile.is_premium ?? false);
         setStreak(profile.streak ?? 0);
       } else {
-        setUserName(user.user_metadata?.full_name?.split(' ')[0] ?? 'Kamu');
+        // Profile row not created yet (trigger may be pending) — fall back to auth metadata
+        setUserName(
+          (user.user_metadata?.full_name as string)?.split(' ')[0] ?? 'Kamu'
+        );
       }
     };
     loadUser();

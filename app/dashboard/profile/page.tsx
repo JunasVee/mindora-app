@@ -58,7 +58,7 @@ export default function ProfilePage() {
         .from('profiles')
         .select('full_name, is_premium, streak, session_count')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       if (profile) {
         setUserName(profile.full_name ?? user.email ?? 'Kamu');
@@ -66,7 +66,9 @@ export default function ProfilePage() {
         setStreak(profile.streak ?? 0);
         setSessionCount(profile.session_count ?? 0);
       } else {
-        setUserName(user.user_metadata?.full_name ?? user.email ?? 'Kamu');
+        setUserName(
+          (user.user_metadata?.full_name as string) ?? user.email ?? 'Kamu'
+        );
       }
     };
     loadProfile();

@@ -25,24 +25,69 @@ export interface ChatHistory {
   parts: [{ text: string }];
 }
 
+// Models to try in order — first one that responds wins.
+const CANDIDATE_MODELS = [
+  'gemini-2.5-flash',       // latest & fastest free-tier (2025)
+  'gemini-2.0-flash',       // fallback
+  'gemini-2.0-flash-lite',  // lightest fallback
+];
+
+async function tryModel(
+  modelName: string,
+  userMessage: string,
+  validHistory: ChatHistory[]
+): Promise<string> {
+  const model = genAI.getGenerativeModel({
+    model: modelName,
+    systemInstruction: SYSTEM_INSTRUCTION,
+  });
+  const chat = model.startChat({ history: validHistory });
+  const result = await chat.sendMessage(userMessage);
+  return result.response.text();
+}
+
 export async function chatWithMinDora(
   userMessage: string,
   history: ChatHistory[]
 ): Promise<string> {
-  const model = genAI.getGenerativeModel({
-    model: 'gemini-2.0-flash',
-    systemInstruction: SYSTEM_INSTRUCTION,
-  });
+  // Gemini requires history to start with role 'user'.
+  // The chat UI seeds an opening 'model' greeting for display purposes —
+  // strip any leading model messages before passing to the API.
+  const firstUserIdx = history.findIndex(m => m.role === 'user');
+  const validHistory = firstUserIdx >= 0 ? history.slice(firstUserIdx) : [];
 
-  const chat = model.startChat({ history });
+  let lastError: any = null;
 
-  try {
-    const result = await chat.sendMessage(userMessage);
-    return result.response.text();
-  } catch (error) {
-    console.error('Gemini API error:', error);
-    throw new Error('Gagal menghubungi MinDora. Coba lagi ya.');
+  for (const modelName of CANDIDATE_MODELS) {
+    try {
+      const text = await tryModel(modelName, userMessage, validHistory);
+      return text;
+    } catch (error: any) {
+      const msg: string = error?.message ?? '';
+      lastError = error;
+
+      // Quota / rate-limit — no point trying other models
+      if (msg.includes('429') || msg.includes('quota') || msg.includes('Too Many Requests')) {
+        throw new Error('MinDora lagi istirahat sebentar karena terlalu banyak permintaan. Coba lagi dalam beberapa detik ya 🙏');
+      }
+      // Auth / key error — no point trying other models
+      if (msg.includes('API_KEY') || msg.includes('api key') || msg.includes('403')) {
+        throw new Error('Konfigurasi AI belum siap. Hubungi admin ya.');
+      }
+      // 404 or model-not-found → try next candidate
+      if (msg.includes('404') || msg.includes('not found') || msg.includes('NOT_FOUND')) {
+        console.warn(`Gemini model "${modelName}" not available, trying next…`);
+        continue;
+      }
+      // Unknown error — surface it
+      console.error(`Gemini API error (${modelName}):`, msg);
+      throw new Error('Gagal menghubungi MinDora. Coba lagi ya.');
+    }
   }
+
+  // All models exhausted
+  console.error('All Gemini candidate models failed. Last error:', lastError?.message);
+  throw new Error('Gagal menghubungi MinDora. Coba lagi ya.');
 }
 
 const CRISIS_KEYWORDS = [
