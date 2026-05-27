@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { MinDoraIcon } from '@/components/Logo';
@@ -8,24 +8,44 @@ import InputField from '@/components/ui/InputField';
 import Button from '@/components/ui/Button';
 import { createClient } from '@/lib/supabase';
 
+function checkPassword(pw: string) {
+  return {
+    length: pw.length >= 8,
+    upper: /[A-Z]/.test(pw),
+    lower: /[a-z]/.test(pw),
+    number: /[0-9]/.test(pw),
+  };
+}
+
+const REQUIREMENTS = [
+  { key: 'length' as const, label: 'Minimal 8 karakter' },
+  { key: 'upper'  as const, label: 'Minimal 1 huruf kapital (A-Z)' },
+  { key: 'lower'  as const, label: 'Minimal 1 huruf kecil (a-z)' },
+  { key: 'number' as const, label: 'Minimal 1 angka (0-9)' },
+];
+
 export default function RegisterPage() {
   const router = useRouter();
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
+
+  const pwChecks = useMemo(() => checkPassword(form.password), [form.password]);
+  const pwValid = Object.values(pwChecks).every(Boolean);
 
   const handleRegister = async () => {
     if (!form.name || !form.email || !form.password || !form.confirm) {
       setError('Semua kolom wajib diisi.');
       return;
     }
-    if (form.password.length < 8) {
-      setError('Password minimal 8 karakter.');
+    if (!pwValid) {
+      setError('Password belum memenuhi semua persyaratan.');
       return;
     }
     if (form.password !== form.confirm) {
-      setError('Password tidak cocok.');
+      setError('Konfirmasi password tidak cocok.');
       return;
     }
 
@@ -56,10 +76,8 @@ export default function RegisterPage() {
     localStorage.setItem('mindora_onboarded', '1');
 
     if (data.session) {
-      // Email confirmation disabled — logged in immediately
       router.replace('/dashboard');
     } else {
-      // Email confirmation required — show waiting screen
       setAwaitingConfirmation(true);
     }
   };
@@ -72,7 +90,6 @@ export default function RegisterPage() {
     });
   };
 
-  // ── Email confirmation waiting screen ──
   if (awaitingConfirmation) {
     return (
       <div className="mobile-shell bg-white flex flex-col items-center justify-center px-8 text-center gap-5">
@@ -129,14 +146,39 @@ export default function RegisterPage() {
             onChange={e => setForm({ ...form, email: e.target.value })}
             autoComplete="email"
           />
-          <InputField
-            label="Password"
-            type="password"
-            placeholder="Min. 8 karakter"
-            value={form.password}
-            onChange={e => setForm({ ...form, password: e.target.value })}
-            autoComplete="new-password"
-          />
+
+          {/* Password with live requirements */}
+          <div>
+            <InputField
+              label="Password"
+              type="password"
+              placeholder="Min. 8 karakter"
+              value={form.password}
+              onChange={e => setForm({ ...form, password: e.target.value })}
+              autoComplete="new-password"
+              onFocus={() => setPasswordFocused(true)}
+              onBlur={() => setPasswordFocused(false)}
+            />
+            {(passwordFocused || form.password.length > 0) && (
+              <div className="mt-2 px-1 flex flex-col gap-1">
+                {REQUIREMENTS.map(req => {
+                  const met = pwChecks[req.key];
+                  return (
+                    <div key={req.key} className="flex items-center gap-2">
+                      <span className="text-[13px]">{met ? '✅' : '⬜'}</span>
+                      <span
+                        className="text-[12px] font-poppins transition-colors"
+                        style={{ color: met ? '#2E7D32' : '#9CA3AF' }}
+                      >
+                        {req.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
           <InputField
             label="Konfirmasi Password"
             type="password"
@@ -145,6 +187,9 @@ export default function RegisterPage() {
             onChange={e => setForm({ ...form, confirm: e.target.value })}
             autoComplete="new-password"
           />
+          {form.confirm.length > 0 && form.password !== form.confirm && (
+            <p className="text-[12px] text-red-500 -mt-2 ml-1">Password tidak cocok.</p>
+          )}
         </div>
 
         {error && (
