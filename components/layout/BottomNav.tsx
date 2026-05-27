@@ -41,8 +41,13 @@ const tabs = [
   },
 ];
 
+// Pages where bottom nav should be hidden (full-screen experiences)
+const HIDDEN_PATHS = ['/dashboard/chat'];
+
 export default function BottomNav() {
   const pathname = usePathname();
+
+  if (HIDDEN_PATHS.some(p => pathname.startsWith(p))) return null;
 
   const isActive = (href: string) => {
     if (href === '/dashboard') return pathname === '/dashboard';

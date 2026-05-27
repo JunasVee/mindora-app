@@ -317,7 +317,7 @@ export default function ChatPage() {
 
   // ── Main chat screen ──────────────────────────────────────────────────
   return (
-    <div className="mobile-shell bg-white flex flex-col h-[100dvh]">
+    <div className="flex-1 bg-white flex flex-col min-h-0">
       <div className="h-11" />
 
       {/* Header */}
