@@ -8,7 +8,7 @@ export default function RedZonePage() {
   const router = useRouter();
 
   return (
-    <div className="mobile-shell flex flex-col items-center justify-center p-6 text-center relative" style={{ background: '#FFF8F0' }}>
+    <div className="flex-1 flex flex-col items-center justify-center p-6 text-center relative" style={{ background: '#FFF8F0' }}>
       {/* Background glow */}
       <div
         className="absolute inset-0 opacity-[0.04]"

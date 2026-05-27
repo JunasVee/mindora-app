@@ -76,7 +76,7 @@ export default function PsikologProfilePage() {
 
   if (!p) {
     return (
-      <div className="mobile-shell bg-[#F5F5F5] flex flex-col items-center justify-center">
+      <div className="flex-1 bg-[#F5F5F5] flex flex-col items-center justify-center">
         <p className="text-[#6B7280]">Profesional tidak ditemukan.</p>
         <button onClick={() => router.back()} className="mt-4 text-[#1A3448] underline">Kembali</button>
       </div>
@@ -89,7 +89,7 @@ export default function PsikologProfilePage() {
   };
 
   return (
-    <div className="mobile-shell bg-[#F5F5F5]">
+    <div className="flex-1 bg-[#F5F5F5] flex flex-col">
       <div className="h-11" />
       <div className="flex items-center justify-between px-5 py-3">
         <button onClick={() => router.back()} className="p-1 bg-transparent border-none cursor-pointer">
@@ -100,7 +100,7 @@ export default function PsikologProfilePage() {
         <div className="w-8" />
       </div>
 
-      <div className="flex-1 overflow-auto scrollbar-none px-5 pb-5">
+      <div className="flex-1 overflow-auto scrollbar-none px-5 pb-24">
         {/* Avatar & name */}
         <div className="text-center mb-5">
           <div

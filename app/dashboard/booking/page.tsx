@@ -60,7 +60,7 @@ function BookingContent() {
 
   if (done) {
     return (
-      <div className="mobile-shell bg-[#F5F5F5] flex flex-col">
+      <div className="flex-1 bg-[#F5F5F5] flex flex-col">
         <div className="h-11" />
         <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
           <span className="text-[72px] mb-4">🎉</span>
@@ -75,7 +75,7 @@ function BookingContent() {
   }
 
   return (
-    <div className="mobile-shell bg-[#F5F5F5]">
+    <div className="flex-1 bg-[#F5F5F5] flex flex-col">
       <div className="h-11" />
       <AppHeader title="Konfirmasi Sesi" />
 
@@ -177,7 +177,7 @@ function BookingContent() {
 
 export default function BookingPage() {
   return (
-    <Suspense fallback={<div className="mobile-shell bg-[#F5F5F5] flex items-center justify-center"><p>Memuat...</p></div>}>
+    <Suspense fallback={<div className="flex-1 bg-[#F5F5F5] flex items-center justify-center"><p>Memuat...</p></div>}>
       <BookingContent />
     </Suspense>
   );

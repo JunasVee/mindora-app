@@ -73,7 +73,7 @@ export default function CheckinPage() {
 
   if (done) {
     return (
-      <div className="mobile-shell bg-[#F5F5F5]">
+      <div className="flex-1 bg-[#F5F5F5] flex flex-col">
         <div className="h-11" />
         <AppHeader title="Check-in Selesai" />
 
@@ -141,11 +141,11 @@ export default function CheckinPage() {
   }
 
   return (
-    <div className="mobile-shell bg-[#F5F5F5]">
+    <div className="flex-1 bg-[#F5F5F5] flex flex-col">
       <div className="h-11" />
       <AppHeader title="Morning Check-in" />
 
-      <div className="flex-1 flex flex-col px-5">
+      <div className="flex-1 overflow-auto scrollbar-none flex flex-col px-5">
         {/* Progress bars */}
         <div className="flex gap-1.5 mb-7">
           {[1, 2, 3].map(i => (

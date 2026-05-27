@@ -56,11 +56,11 @@ export default function ForecastPage() {
   const hardDays = forecast.days.filter(d => d.severity >= 3);
 
   return (
-    <div className="mobile-shell bg-[#F5F5F5]">
+    <div className="flex-1 bg-[#F5F5F5] flex flex-col">
       <div className="h-11" />
       <AppHeader title="Mood Forecast" />
 
-      <div className="flex-1 overflow-auto scrollbar-none px-5 pb-5">
+      <div className="flex-1 overflow-auto scrollbar-none px-5 pb-24">
         {/* Week Navigation */}
         <div className="flex items-center justify-between mt-2 mb-4">
           <button
