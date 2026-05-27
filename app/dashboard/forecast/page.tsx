@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import AppHeader from '@/components/layout/AppHeader';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { generateForecast } from '@/lib/forecast';
+import { createClient } from '@/lib/supabase';
 import type { Emotion } from '@/types';
 
 // Sample data for demo — replace with real API call
@@ -50,10 +51,36 @@ export default function ForecastPage() {
   const router = useRouter();
   const [weekOffset, setWeekOffset] = useState(0);
   const [showInfo, setShowInfo] = useState(false);
+  const [isPremium, setIsPremium] = useState<boolean | null>(null); // null = loading
+
+  // ── Premium gate ──────────────────────────────────────────────────
+  useEffect(() => {
+    const check = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { router.replace('/auth/login'); return; }
+
+      const { data } = await supabase
+        .from('profiles')
+        .select('is_premium')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (!data?.is_premium) {
+        router.replace('/premium');
+      } else {
+        setIsPremium(true);
+      }
+    };
+    check();
+  }, [router]);
 
   const forecast = useMemo(() => generateForecast(SAMPLE_MOODS, weekOffset), [weekOffset]);
   const avgProb = Math.round(forecast.days.reduce((s, d) => s + d.probability, 0) / 7);
   const hardDays = forecast.days.filter(d => d.severity >= 3);
+
+  // Show nothing while checking premium status (redirects handled in useEffect)
+  if (!isPremium) return null;
 
   return (
     <div className="flex-1 bg-[#F5F5F5] flex flex-col">

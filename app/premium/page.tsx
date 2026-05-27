@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import AppHeader from '@/components/layout/AppHeader';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import { createClient } from '@/lib/supabase';
 
 const FEATURES = [
   { name: 'Chat AI', free: true },
@@ -33,11 +34,27 @@ export default function PremiumPage() {
 
   const handlePay = async () => {
     setPaying(true);
-    // Integrate real payment here (Midtrans/Xendit)
-    setTimeout(() => {
-      setPaying(false);
-      setStep('success');
-    }, 1500);
+
+    // TODO: integrate real payment gateway (Midtrans/Xendit) here.
+    // For now, simulate a 1.5s processing delay then mark the user as premium.
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ is_premium: true })
+          .eq('id', user.id);
+        if (error) console.error('Failed to update premium status:', error);
+      }
+    } catch (e) {
+      console.error('Premium update error:', e);
+    }
+
+    setPaying(false);
+    setStep('success');
   };
 
   if (step === 'success') {
