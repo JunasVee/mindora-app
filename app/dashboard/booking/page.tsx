@@ -60,7 +60,7 @@ function BookingContent() {
 
   if (done) {
     return (
-      <div className="flex-1 bg-[#F5F5F5] flex flex-col">
+      <div className="flex-1 min-h-0 bg-[#F5F5F5] flex flex-col">
         <div className="h-11" />
         <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
           <span className="text-[72px] mb-4">🎉</span>
@@ -75,7 +75,7 @@ function BookingContent() {
   }
 
   return (
-    <div className="flex-1 bg-[#F5F5F5] flex flex-col">
+    <div className="flex-1 min-h-0 bg-[#F5F5F5] flex flex-col">
       <div className="h-11" />
       <AppHeader title="Konfirmasi Sesi" />
 

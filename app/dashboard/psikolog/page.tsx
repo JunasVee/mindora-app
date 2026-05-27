@@ -74,11 +74,11 @@ export default function PsikologPage() {
   });
 
   return (
-    <div className="flex-1 overflow-auto scrollbar-none flex flex-col">
+    <div className="flex-1 min-h-0 flex flex-col">
       <div className="h-11" />
       <AppHeader title="Temukan Profesional" showBack={false} />
 
-      <div className="flex-1 overflow-auto scrollbar-none px-5 pb-5">
+      <div className="flex-1 overflow-auto scrollbar-none px-5 pb-24">
         {/* Search */}
         <div className="flex items-center gap-2.5 px-4 py-3 bg-white rounded-2xl border-[1.5px] border-[#E5E7EB] mb-3.5 focus-within:border-[#1A3448] transition-colors">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none">

@@ -9,16 +9,11 @@ import { generateForecast } from '@/lib/forecast';
 import { createClient } from '@/lib/supabase';
 import type { Emotion } from '@/types';
 
-// Sample data for demo — replace with real API call
-const SAMPLE_MOODS = [
-  { date: '2026-05-14', emotion: 'Senang' as Emotion, sleep_quality: 4 },
-  { date: '2026-05-15', emotion: 'Biasa aja' as Emotion, sleep_quality: 3 },
-  { date: '2026-05-16', emotion: 'Cemas' as Emotion, sleep_quality: 3 },
-  { date: '2026-05-17', emotion: 'Cemas' as Emotion, sleep_quality: 2 },
-  { date: '2026-05-18', emotion: 'Biasa aja' as Emotion, sleep_quality: 4 },
-  { date: '2026-05-19', emotion: 'Senang' as Emotion, sleep_quality: 4 },
-  { date: '2026-05-20', emotion: 'Senang' as Emotion, sleep_quality: 5 },
-];
+interface MoodEntry {
+  date: string;
+  emotion: Emotion;
+  sleep_quality: number;
+}
 
 const EMOTION_COLORS: Record<Emotion, string> = {
   'Senang': '#4CAF50',
@@ -52,30 +47,72 @@ export default function ForecastPage() {
   const [weekOffset, setWeekOffset] = useState(0);
   const [showInfo, setShowInfo] = useState(false);
   const [isPremium, setIsPremium] = useState<boolean | null>(null); // null = loading
+  const [moodData, setMoodData] = useState<MoodEntry[]>([]);
 
-  // ── Premium gate ──────────────────────────────────────────────────
+  // ── Load premium status + real mood data ──────────────────────────
   useEffect(() => {
-    const check = async () => {
+    const load = async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.replace('/auth/login'); return; }
 
-      const { data } = await supabase
+      const { data: profile } = await supabase
         .from('profiles')
         .select('is_premium')
         .eq('id', user.id)
         .maybeSingle();
 
-      if (!data?.is_premium) {
+      if (!profile?.is_premium) {
         router.replace('/premium');
-      } else {
-        setIsPremium(true);
+        return;
       }
+      setIsPremium(true);
+
+      // Fetch last 60 days of mood entries
+      const since = new Date();
+      since.setDate(since.getDate() - 60);
+      const { data: entries } = await supabase
+        .from('mood_entries')
+        .select('date, emotion, sleep_quality')
+        .eq('user_id', user.id)
+        .gte('date', since.toISOString().split('T')[0])
+        .order('date', { ascending: true });
+
+      // Also fetch chat session zones to augment severity
+      const { data: sessions } = await supabase
+        .from('chat_sessions')
+        .select('created_at, zone, intensity_score')
+        .eq('user_id', user.id)
+        .gte('created_at', since.toISOString())
+        .order('created_at', { ascending: true });
+
+      // Map chat session zones → synthetic mood entries (only if no mood_entry on that date)
+      const sessionEntries: MoodEntry[] = (sessions ?? []).map((s: any) => {
+        const date = s.created_at.split('T')[0];
+        const zoneEmotion: Emotion =
+          s.zone === 'red' ? 'Overwhelmed' :
+          s.zone === 'yellow' ? (s.intensity_score >= 4 ? 'Frustrasi' : 'Cemas') :
+          'Biasa aja';
+        return { date, emotion: zoneEmotion, sleep_quality: 3 };
+      });
+
+      // Merge: prefer actual mood_entries over session-derived entries
+      const existingDates = new Set((entries ?? []).map((e: any) => e.date));
+      const merged: MoodEntry[] = [
+        ...(entries ?? []).map((e: any) => ({
+          date: e.date as string,
+          emotion: e.emotion as Emotion,
+          sleep_quality: e.sleep_quality as number,
+        })),
+        ...sessionEntries.filter(s => !existingDates.has(s.date)),
+      ].sort((a, b) => a.date.localeCompare(b.date));
+
+      setMoodData(merged);
     };
-    check();
+    load();
   }, [router]);
 
-  const forecast = useMemo(() => generateForecast(SAMPLE_MOODS, weekOffset), [weekOffset]);
+  const forecast = useMemo(() => generateForecast(moodData, weekOffset), [moodData, weekOffset]);
   const avgProb = Math.round(forecast.days.reduce((s, d) => s + d.probability, 0) / 7);
   const hardDays = forecast.days.filter(d => d.severity >= 3);
 
@@ -83,7 +120,7 @@ export default function ForecastPage() {
   if (!isPremium) return null;
 
   return (
-    <div className="flex-1 bg-[#F5F5F5] flex flex-col">
+    <div className="flex-1 min-h-0 bg-[#F5F5F5] flex flex-col">
       <div className="h-11" />
       <AppHeader title="Mood Forecast" />
 

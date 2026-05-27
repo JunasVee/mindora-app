@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     const [profileRes, moodRes] = await Promise.all([
       supabase
         .from('profiles')
-        .select('full_name, streak, session_count, is_premium')
+        .select('full_name, streak, session_count, is_premium, ai_notes')
         .eq('id', user.id)
         .maybeSingle(),
       supabase
@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
 
     const profile = profileRes.data;
     const mood = moodRes.data;
+    const aiNotes: Record<string, any> = profile?.ai_notes ?? {};
 
     const contextLines: string[] = [
       '[Konteks pengguna — jangan sebut secara eksplisit kecuali relevan:]',
@@ -50,6 +51,22 @@ export async function POST(req: NextRequest) {
     if (mood?.sleep_quality) contextLines.push(`Kualitas tidur terakhir: ${mood.sleep_quality}/5`);
     if (mood?.has_concern && mood.concern_text)
       contextLines.push(`Kekhawatiran yang dicatat: "${mood.concern_text}"`);
+
+    // Inject persisted ai_notes as personal memory
+    if (Object.keys(aiNotes).length > 0) {
+      const noteLines: string[] = [];
+      if (aiNotes.interests?.length)          noteLines.push(`Hobi/minat: ${aiNotes.interests.join(', ')}`);
+      if (aiNotes.stressors?.length)          noteLines.push(`Stressor utama: ${aiNotes.stressors.join(', ')}`);
+      if (aiNotes.situation)                   noteLines.push(`Situasi: ${aiNotes.situation}`);
+      if (aiNotes.coping_strategies?.length)  noteLines.push(`Cara cope: ${aiNotes.coping_strategies.join(', ')}`);
+      if (aiNotes.personality_notes)           noteLines.push(`Karakter: ${aiNotes.personality_notes}`);
+      if (aiNotes.personal_context)            noteLines.push(`Konteks personal: ${aiNotes.personal_context}`);
+      if (noteLines.length > 0) {
+        contextLines.push('');
+        contextLines.push('[Catatan tentang user dari sesi-sesi sebelumnya:]');
+        contextLines.push(...noteLines);
+      }
+    }
 
     if (contextLines.length > 1) {
       contextualHistory = [

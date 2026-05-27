@@ -190,7 +190,7 @@ export default function ChatPage() {
     }, 800);
   };
 
-  // ── End session — save to Supabase ────────────────────────────────────
+  // ── End session — save to Supabase + extract insights ────────────────
   const handleEndSession = async () => {
     localStorage.removeItem(STORAGE_KEY);
 
@@ -219,6 +219,14 @@ export default function ChatPage() {
             .from('profiles')
             .update({ session_count: (profile?.session_count ?? 0) + 1 })
             .eq('id', user.id);
+
+          // Extract and persist user insights (fire-and-forget — don't block navigation)
+          const sessionMessages = messages.map(m => ({ role: m.role, content: m.content }));
+          fetch('/api/insights', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messages: sessionMessages }),
+          }).catch(() => { /* non-critical */ });
         }
       } catch (e) {
         console.error('Failed to save session:', e);
