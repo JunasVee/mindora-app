@@ -24,7 +24,7 @@ interface SavedSession {
 }
 
 const STORAGE_KEY = 'mindora_active_chat';
-const GREETING = 'Hal apa yang paling banyak nguras pikiranmu sekarang? Cerita aja, MinDora di sini dengerin kamu 💙';
+const GREETING = 'Lagi ada yang berat dipikirin? Cerita aja — nggak ada yang dihakimin di sini 💙';
 
 const ZONE_CONFIG = {
   green:  { emoji: '🟢', label: 'HIJAU',  bg: '#F0FFF4', border: '#C6F6D5', textColor: '#2E7D32' },
@@ -53,6 +53,8 @@ export default function ChatPage() {
   const [messageCount, setMessageCount] = useState(0);
   const [isRestoredSession, setIsRestoredSession] = useState(false);
   const [sessionSaved, setSessionSaved] = useState(false);
+  // showResult is driven by explicit user action (Akhiri Sesi), not by intensity pick
+  const [showResult, setShowResult] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -68,7 +70,7 @@ export default function ChatPage() {
           setMessageCount(saved.messageCount ?? 0);
           setSessionId(saved.id);
           setIsRestoredSession(true);
-          if (saved.messageCount >= 3) setShowIntensityPicker(true);
+          // Don't auto-show intensity picker on restore — MinDora will signal it naturally
           return;
         }
         localStorage.removeItem(STORAGE_KEY);
@@ -98,13 +100,6 @@ export default function ChatPage() {
     }
   }, [messages, typing, showIntensityPicker]);
 
-  // ── Show intensity picker after 3 user messages ───────────────────────
-  useEffect(() => {
-    if (messageCount === 3 && !showIntensityPicker && intensity === null) {
-      setShowIntensityPicker(true);
-    }
-  }, [messageCount, showIntensityPicker, intensity]);
-
   // ── Start fresh session ───────────────────────────────────────────────
   const startFresh = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
@@ -116,6 +111,7 @@ export default function ChatPage() {
     setZone(null);
     setShowIntensityPicker(false);
     setIsRestoredSession(false);
+    setShowResult(false);
   }, []);
 
   // ── Send message ──────────────────────────────────────────────────────
@@ -145,6 +141,10 @@ export default function ChatPage() {
       const data = await res.json();
       if (data.response) {
         setMessages(prev => [...prev, { role: 'model', content: data.response }]);
+        // MinDora signals when it's the right moment to ask intensity — no hardcoded count
+        if (data.triggerIntensityPicker && intensity === null) {
+          setShowIntensityPicker(true);
+        }
       } else if (data.error) {
         setMessages(prev => [...prev, { role: 'model', content: data.error }]);
       }
@@ -155,7 +155,7 @@ export default function ChatPage() {
     }
   };
 
-  // ── Intensity pick ────────────────────────────────────────────────────
+  // ── Intensity pick — store zone internally, NEVER end the session ────
   const handleIntensity = async (val: number) => {
     setIntensity(val);
     setShowIntensityPicker(false);
@@ -164,12 +164,14 @@ export default function ChatPage() {
     const detectedZone = detectZone(val, allText);
     setZone(detectedZone);
 
+    // Only auto-redirect on true crisis (red zone)
     if (detectedZone === 'red') {
       localStorage.removeItem(STORAGE_KEY);
       router.push('/dashboard/red-zone');
       return;
     }
 
+    // For all other zones: MinDora responds empathetically and chat continues
     setTyping(true);
     setTimeout(async () => {
       try {
@@ -177,7 +179,7 @@ export default function ChatPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            message: `[Sistem: intensitas ${val}/5]`,
+            message: `[Sistem: user mengisi skor intensitas ${val}/5 — respond dengan empati sesuai beratnya, lanjutkan obrolan, jangan tutup sesi]`,
             history: messages.map(m => ({ role: m.role, parts: [{ text: m.content }] })),
           }),
         });
@@ -188,6 +190,13 @@ export default function ChatPage() {
       } catch { /* ignore */ }
       setTyping(false);
     }, 800);
+  };
+
+  // ── User explicitly requests to end session ───────────────────────────
+  const handleRequestEnd = () => {
+    // If no intensity was picked yet, default to green
+    if (!zone) setZone('green');
+    setShowResult(true);
   };
 
   // ── End session — save to Supabase + extract insights ────────────────
@@ -233,7 +242,8 @@ export default function ChatPage() {
       }
     }
 
-    if (zone === 'yellow') {
+    const resolvedZone = zone ?? 'green';
+    if (resolvedZone === 'yellow') {
       router.push('/dashboard/psikolog');
     } else {
       router.push('/dashboard');
@@ -241,10 +251,9 @@ export default function ChatPage() {
   };
 
   // ── Zone result screen ────────────────────────────────────────────────
-  const showResult = zone !== null;
-
-  if (showResult && zone) {
-    const info = ZONE_CONFIG[zone];
+  if (showResult) {
+    const resolvedZone = zone ?? 'green';
+    const info = ZONE_CONFIG[resolvedZone];
     return (
       <div className="mobile-shell bg-white">
         <div className="h-11" />
@@ -282,7 +291,7 @@ export default function ChatPage() {
               </div>
             </div>
 
-            {zone === 'yellow' ? (
+            {resolvedZone === 'yellow' ? (
               <>
                 <h2 className="font-boogaloo text-[22px] text-[#1A3448] text-center mb-2">
                   Kamu lagi bawa banyak hal nih.
@@ -296,10 +305,10 @@ export default function ChatPage() {
             ) : (
               <>
                 <h2 className="font-boogaloo text-[22px] text-[#1A3448] text-center mb-2">
-                  Kamu udah hebat banget hari ini!
+                  Makasih udah cerita hari ini.
                 </h2>
                 <p className="text-sm text-[#6B7280] text-center mb-5 leading-relaxed">
-                  Kondisimu terlihat oke. Tetap jaga diri dan check-in lagi besok ya 💙
+                  Ngeluarin apa yang ada di kepala itu udah langkah yang besar. Jaga diri ya 💙
                 </p>
                 <Button onClick={handleEndSession}>Selesai</Button>
               </>
@@ -344,16 +353,23 @@ export default function ChatPage() {
             )}
           </div>
         </div>
-        {isRestoredSession ? (
+        <div className="flex items-center gap-2">
+          {isRestoredSession && (
+            <button
+              onClick={startFresh}
+              className="text-[11px] text-[#6B7280] bg-transparent border border-[#E5E7EB] rounded-xl px-2 py-1 cursor-pointer font-poppins"
+            >
+              Baru
+            </button>
+          )}
           <button
-            onClick={startFresh}
-            className="text-[12px] text-[#6B7280] bg-transparent border border-[#E5E7EB] rounded-xl px-2.5 py-1 cursor-pointer font-poppins"
+            onClick={handleRequestEnd}
+            disabled={messages.length <= 1}
+            className="text-[11px] text-[#EF5350] bg-transparent border border-[#FFCDD2] rounded-xl px-2.5 py-1 cursor-pointer font-poppins disabled:opacity-30 disabled:cursor-default"
           >
-            Baru
+            Akhiri
           </button>
-        ) : (
-          <div className="w-8" />
-        )}
+        </div>
       </div>
 
       {/* Messages */}

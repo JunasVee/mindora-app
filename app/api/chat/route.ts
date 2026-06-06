@@ -78,8 +78,14 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const response = await chatWithMinDora(message, contextualHistory);
-    return NextResponse.json({ response });
+    const raw = await chatWithMinDora(message, contextualHistory);
+
+    // Detect MinDora's self-determined signal to show the intensity picker.
+    // The marker is stripped before sending text to the client.
+    const triggerIntensityPicker = raw.includes('[INTENSITY_CHECK]');
+    const response = raw.replace('[INTENSITY_CHECK]', '').trim();
+
+    return NextResponse.json({ response, triggerIntensityPicker });
   } catch (error) {
     console.error('Chat error:', error);
     const msg = error instanceof Error ? error.message : 'Gagal menghubungi MinDora. Coba lagi ya.';
