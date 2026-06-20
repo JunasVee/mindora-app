@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Script from 'next/script';
 import AppHeader from '@/components/layout/AppHeader';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { createClient } from '@/lib/supabase';
+import { checkSubscriptionStatus } from '@/lib/subscription';
 import { SNAP_JS_URL } from '@/lib/midtrans';
 
 // Extend Window so TypeScript knows about window.snap
@@ -44,6 +45,15 @@ export default function PremiumPage() {
   const [paying, setPaying] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  useEffect(() => {
+    const run = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) checkSubscriptionStatus(user.id);
+    };
+    run();
+  }, []);
+
   const handleUpgrade = async () => {
     if (!window.snap) {
       setErrorMsg('Komponen pembayaran belum siap. Coba refresh halaman.');
@@ -80,7 +90,11 @@ export default function PremiumPage() {
             const supabase = createClient();
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
-              await supabase.from('profiles').update({ is_premium: true }).eq('id', user.id);
+              const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+              await supabase
+                .from('profiles')
+                .update({ is_premium: true, subscription_expires_at: expiresAt, expiry_notified_at: null })
+                .eq('id', user.id);
             }
           } catch { /* webhook will handle it as fallback */ }
           setPaying(false);

@@ -6,6 +6,7 @@ import AppHeader from '@/components/layout/AppHeader';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { createClient } from '@/lib/supabase';
+import { checkSubscriptionStatus } from '@/lib/subscription';
 
 const FREE_FEATURES  = ['Sesi cerita harian (1x)', 'Morning check-in', 'Komunitas dasar'];
 const PREMIUM_FEATURES = ['Sesi cerita tak terbatas', 'Mood Forecast mingguan', 'Laporan bulanan lengkap', 'Booking psikolog prioritas', 'Semua fitur Free'];
@@ -13,6 +14,7 @@ const PREMIUM_FEATURES = ['Sesi cerita tak terbatas', 'Mood Forecast mingguan', 
 export default function SubscriptionPage() {
   const router = useRouter();
   const [isPremium, setIsPremium] = useState(false);
+  const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,13 +23,16 @@ export default function SubscriptionPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.replace('/auth/login'); return; }
 
+      await checkSubscriptionStatus(user.id);
+
       const { data } = await supabase
         .from('profiles')
-        .select('is_premium')
+        .select('is_premium, subscription_expires_at')
         .eq('id', user.id)
         .maybeSingle();
 
       setIsPremium(data?.is_premium ?? false);
+      setExpiresAt(data?.subscription_expires_at ?? null);
       setLoading(false);
     };
     load();
@@ -59,6 +64,11 @@ export default function SubscriptionPage() {
               <p className="text-sm text-white/80 mt-1">
                 {isPremium ? 'Kamu sudah berlangganan premium' : 'Tingkatkan untuk fitur penuh'}
               </p>
+              {isPremium && expiresAt && (
+                <p className="text-xs text-white/70 mt-2">
+                  Berlaku sampai {new Date(expiresAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </p>
+              )}
             </div>
 
             {/* Feature list */}

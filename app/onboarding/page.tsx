@@ -4,28 +4,18 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ProgressDots from '@/components/ui/ProgressDots';
 import Button from '@/components/ui/Button';
-
-const slides = [
-  {
-    emoji: '🧘',
-    headline: 'Pikiran penuh?\nMinDora siap dengerin.',
-    sub: 'Bukan terapi. Bukan chatbot biasa. Teman berpikir yang selalu ada.',
-  },
-  {
-    emoji: '💭',
-    headline: 'Ceritakan harimu\ntanpa dihakimi.',
-    sub: 'MinDora dengarkan, bantu kamu urai pikiran, dan temukan langkah kecil berikutnya.',
-  },
-  {
-    emoji: '🌱',
-    headline: 'Tumbuh bersama,\nsatu hari satu langkah.',
-    sub: 'Lacak mood-mu, bangun streak, dan temukan profesional jika kamu butuh lebih.',
-  },
-];
+import { useLanguage } from '@/lib/language-context';
 
 export default function OnboardingPage() {
   const [slide, setSlide] = useState(0);
   const router = useRouter();
+  const { t } = useLanguage();
+
+  const slides = [
+    { emoji: '🧘', headline: t('onboarding', 'slide1Headline'), sub: t('onboarding', 'slide1Sub') },
+    { emoji: '💭', headline: t('onboarding', 'slide2Headline'), sub: t('onboarding', 'slide2Sub') },
+    { emoji: '🌱', headline: t('onboarding', 'slide3Headline'), sub: t('onboarding', 'slide3Sub') },
+  ];
   const current = slides[slide];
 
   const handleNext = () => {
@@ -66,14 +56,14 @@ export default function OnboardingPage() {
       <div className="px-6 pb-10 flex flex-col gap-4 items-center">
         <ProgressDots total={3} current={slide} />
         <Button onClick={handleNext}>
-          {slide < slides.length - 1 ? 'Lanjut' : 'Mulai'}
+          {slide < slides.length - 1 ? t('onboarding', 'next') : t('onboarding', 'start')}
         </Button>
         <button
           onClick={() => router.push('/auth/login')}
           className="bg-transparent border-none text-sm text-[#6B7280] cursor-pointer font-poppins"
         >
-          Sudah punya akun?{' '}
-          <span className="text-[#1A3448] font-semibold">Masuk</span>
+          {t('onboarding', 'haveAccount')}{' '}
+          <span className="text-[#1A3448] font-semibold">{t('onboarding', 'login')}</span>
         </button>
       </div>
     </div>

@@ -17,6 +17,34 @@
 :root {
   --background: #F5F5F5;
   --foreground: #1A3448;
+
+  /* Theme-aware tokens — light values (default) */
+  --dm-bg: #F5F5F5;
+  --dm-bg-soft: #E8EEF2;
+  --dm-surface: #FFFFFF;
+  --dm-surface-soft: #F9FAFB;
+  --dm-surface-muted: #F3F4F6;
+  --dm-tint: #EDF4F8;
+  --dm-border: #E5E7EB;
+  --dm-border-soft: #F3F4F6;
+  --dm-text-primary: #1A3448;
+  --dm-text-secondary: #6B7280;
+  --dm-text-tertiary: #9CA3AF;
+}
+
+/* Dark mode overrides — toggled via .dark class on <html> (ThemeProvider) */
+.dark {
+  --dm-bg: #0F1620;
+  --dm-bg-soft: #0B1118;
+  --dm-surface: #16202B;
+  --dm-surface-soft: #1B2530;
+  --dm-surface-muted: #1F2A36;
+  --dm-tint: #15222C;
+  --dm-border: #2A3441;
+  --dm-border-soft: #232D38;
+  --dm-text-primary: #E8EDF2;
+  --dm-text-secondary: #9AA7B5;
+  --dm-text-tertiary: #788494;
 }
 
 * {
@@ -30,10 +58,11 @@ html, body {
 }
 
 body {
-  background: #E8EEF2;
-  color: var(--foreground);
+  background: var(--dm-bg-soft);
+  color: var(--dm-text-primary);
   font-family: 'Poppins', sans-serif;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* Mobile shell centering */
@@ -44,11 +73,55 @@ body {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  background: #F5F5F5;
+  background: var(--dm-bg);
   position: relative;
   overflow: hidden;
+  transition: background-color 0.2s ease;
 }
 
+/* ── Dark mode backstop ───────────────────────────────────────────────────
+   Most of the app uses hardcoded Tailwind arbitrary-value classes (e.g.
+   bg-[#F5F5F5], text-[#1A3448]) instead of theme tokens. Rather than touch
+   every page, we override the literal generated classnames directly so a
+   single .dark class on <html> repaints the entire app at once. */
+.dark .bg-white {
+  background-color: var(--dm-surface) !important;
+}
+.dark .bg-\[\#F9FAFB\] {
+  background-color: var(--dm-surface-soft) !important;
+}
+.dark .bg-\[\#F3F4F6\],
+.dark .bg-gray-100 {
+  background-color: var(--dm-surface-muted) !important;
+}
+.dark .bg-\[\#EDF4F8\] {
+  background-color: var(--dm-tint) !important;
+}
+.dark .bg-gray-50 {
+  background-color: var(--dm-surface-soft) !important;
+}
+.dark .border-\[\#E5E7EB\] {
+  border-color: var(--dm-border) !important;
+}
+.dark .border-gray-100 {
+  border-color: var(--dm-border-soft) !important;
+}
+.dark .border-gray-200 {
+  border-color: var(--dm-border) !important;
+}
+.dark .text-\[\#1A3448\] {
+  color: var(--dm-text-primary) !important;
+}
+.dark .text-\[\#6B7280\] {
+  color: var(--dm-text-secondary) !important;
+}
+.dark .text-\[\#9CA3AF\],
+.dark .text-gray-400 {
+  color: var(--dm-text-tertiary) !important;
+}
+.dark .bg-\[\#F5F5F5\] {
+  background-color: var(--dm-bg) !important;
+}
 @media (min-width: 500px) {
   .mobile-shell {
     min-height: 100dvh;

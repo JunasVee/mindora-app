@@ -7,16 +7,18 @@ import { MinDoraIcon } from '@/components/Logo';
 import InputField from '@/components/ui/InputField';
 import Button from '@/components/ui/Button';
 import { createClient } from '@/lib/supabase';
+import { useLanguage } from '@/lib/language-context';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
     if (!form.email || !form.password) {
-      setError('Lengkapi email dan password ya.');
+      setError(t('login', 'errorEmpty'));
       return;
     }
     setLoading(true);
@@ -29,7 +31,7 @@ export default function LoginPage() {
     });
 
     if (authError) {
-      setError('Email atau password salah. Coba lagi ya.');
+      setError(t('login', 'errorInvalid'));
       setLoading(false);
       return;
     }
@@ -54,25 +56,25 @@ export default function LoginPage() {
         </div>
 
         <h2 className="font-boogaloo text-[28px] text-[#1A3448] text-center mb-2">
-          Selamat Datang Kembali
+          {t('login', 'welcome')}
         </h2>
         <p className="text-sm text-[#6B7280] text-center mb-7">
-          Senang ketemu lagi! Yuk lanjut cerita.
+          {t('login', 'subtitle')}
         </p>
 
         <div className="flex flex-col gap-3.5">
           <InputField
-            label="Email"
+            label={t('login', 'email')}
             type="email"
-            placeholder="email@contoh.com"
+            placeholder={t('login', 'emailPlaceholder')}
             value={form.email}
             onChange={e => setForm({ ...form, email: e.target.value })}
             autoComplete="email"
           />
           <InputField
-            label="Password"
+            label={t('login', 'password')}
             type="password"
-            placeholder="Password kamu"
+            placeholder={t('login', 'passwordPlaceholder')}
             value={form.password}
             onChange={e => setForm({ ...form, password: e.target.value })}
             autoComplete="current-password"
@@ -80,8 +82,11 @@ export default function LoginPage() {
         </div>
 
         <div className="text-right mt-2">
-          <button className="bg-transparent border-none text-[13px] text-[#A8C8D8] cursor-pointer font-poppins font-medium">
-            Lupa password?
+          <button
+            onClick={() => router.push('/auth/forgot-password')}
+            className="bg-transparent border-none text-[13px] text-[#A8C8D8] cursor-pointer font-poppins font-medium"
+          >
+            {t('login', 'forgot')}
           </button>
         </div>
 
@@ -91,14 +96,14 @@ export default function LoginPage() {
 
         <div className="mt-6">
           <Button onClick={handleLogin} disabled={loading}>
-            {loading ? 'Masuk...' : 'Masuk'}
+            {loading ? t('login', 'signingIn') : t('login', 'signIn')}
           </Button>
         </div>
 
         {/* Divider */}
         <div className="flex items-center gap-3 my-5">
           <div className="flex-1 h-px bg-[#E5E7EB]" />
-          <span className="text-[13px] text-gray-400">atau</span>
+          <span className="text-[13px] text-gray-400">{t('login', 'or')}</span>
           <div className="flex-1 h-px bg-[#E5E7EB]" />
         </div>
 
@@ -108,13 +113,13 @@ export default function LoginPage() {
           className="w-full py-3.5 flex items-center justify-center gap-2.5 bg-white border-[1.5px] border-[#E5E7EB] rounded-2xl cursor-pointer font-poppins text-[15px] text-[#1A3448] hover:bg-gray-50 transition-colors"
         >
           <GoogleIcon />
-          Lanjut dengan Google
+          {t('login', 'google')}
         </button>
 
         <p className="text-center mt-4 text-sm text-[#6B7280]">
-          Belum punya akun?{' '}
+          {t('login', 'noAccount')}{' '}
           <Link href="/auth/register" className="text-[#1A3448] font-semibold no-underline">
-            Daftar
+            {t('login', 'register')}
           </Link>
         </p>
       </div>

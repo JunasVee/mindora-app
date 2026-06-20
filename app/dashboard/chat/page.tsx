@@ -9,6 +9,7 @@ import ToggleSwitch from '@/components/ui/ToggleSwitch';
 import { MinDoraAvatar } from '@/components/Logo';
 import { createClient } from '@/lib/supabase';
 import { detectZone } from '@/lib/gemini';
+import { useLanguage } from '@/lib/language-context';
 import type { Zone } from '@/types';
 
 interface UIMessage {
@@ -24,13 +25,6 @@ interface SavedSession {
 }
 
 const STORAGE_KEY = 'mindora_active_chat';
-const GREETING = 'Lagi ada yang berat dipikirin? Cerita aja — nggak ada yang dihakimin di sini 💙';
-
-const ZONE_CONFIG = {
-  green:  { emoji: '🟢', label: 'HIJAU',  bg: '#F0FFF4', border: '#C6F6D5', textColor: '#2E7D32' },
-  yellow: { emoji: '🟡', label: 'KUNING', bg: '#FFF9E6', border: '#FFE082', textColor: '#B8860B' },
-  red:    { emoji: '🔴', label: 'MERAH',  bg: '#FFF5F5', border: '#FFCDD2', textColor: '#C62828' },
-};
 
 function generateId() {
   return typeof crypto !== 'undefined' && crypto.randomUUID
@@ -40,8 +34,16 @@ function generateId() {
 
 export default function ChatPage() {
   const router = useRouter();
+  const { t } = useLanguage();
+
+  const ZONE_CONFIG = {
+    green:  { emoji: '🟢', label: t('chat', 'zoneLabelGreen'),  bg: '#F0FFF4', border: '#C6F6D5', textColor: '#2E7D32' },
+    yellow: { emoji: '🟡', label: t('chat', 'zoneLabelYellow'), bg: '#FFF9E6', border: '#FFE082', textColor: '#B8860B' },
+    red:    { emoji: '🔴', label: t('chat', 'zoneLabelRed'),    bg: '#FFF5F5', border: '#FFCDD2', textColor: '#C62828' },
+  };
+
   const [messages, setMessages] = useState<UIMessage[]>([
-    { role: 'model', content: GREETING },
+    { role: 'model', content: t('chat', 'greeting') },
   ]);
   const [input, setInput] = useState('');
   const [typing, setTyping] = useState(false);
@@ -105,14 +107,14 @@ export default function ChatPage() {
     localStorage.removeItem(STORAGE_KEY);
     const newId = generateId();
     setSessionId(newId);
-    setMessages([{ role: 'model', content: GREETING }]);
+    setMessages([{ role: 'model', content: t('chat', 'greeting') }]);
     setMessageCount(0);
     setIntensity(null);
     setZone(null);
     setShowIntensityPicker(false);
     setIsRestoredSession(false);
     setShowResult(false);
-  }, []);
+  }, [t]);
 
   // ── Send message ──────────────────────────────────────────────────────
   const sendMessage = async (text: string) => {
@@ -149,7 +151,7 @@ export default function ChatPage() {
         setMessages(prev => [...prev, { role: 'model', content: data.error }]);
       }
     } catch {
-      setMessages(prev => [...prev, { role: 'model', content: 'Maaf, koneksi bermasalah. Coba lagi ya 🙏' }]);
+      setMessages(prev => [...prev, { role: 'model', content: t('chat', 'connectionError') }]);
     } finally {
       setTyping(false);
     }
@@ -257,7 +259,7 @@ export default function ChatPage() {
     return (
       <div className="mobile-shell bg-white">
         <div className="h-11" />
-        <AppHeader title="Sesi Cerita" />
+        <AppHeader title={t('chat', 'title')} />
 
         <div className="flex-1 overflow-auto relative">
           <div className="p-4 opacity-30 blur-sm pointer-events-none">
@@ -286,7 +288,7 @@ export default function ChatPage() {
               >
                 <span className="text-xl">{info.emoji}</span>
                 <span className="text-sm font-semibold" style={{ color: info.textColor }}>
-                  ZONA {info.label}
+                  {info.label}
                 </span>
               </div>
             </div>
@@ -294,37 +296,37 @@ export default function ChatPage() {
             {resolvedZone === 'yellow' ? (
               <>
                 <h2 className="font-boogaloo text-[22px] text-[#1A3448] text-center mb-2">
-                  Kamu lagi bawa banyak hal nih.
+                  {t('chat', 'yellowTitle')}
                 </h2>
                 <p className="text-sm text-[#6B7280] text-center mb-5 leading-relaxed">
-                  Nggak ada yang salah minta bantuan lebih. Mau ngobrol sama psikolog mitra MinDora?
+                  {t('chat', 'yellowBody')}
                 </p>
-                <Button onClick={() => router.push('/dashboard/psikolog')}>Ya, hubungkan aku</Button>
-                <Button variant="ghost" onClick={handleEndSession} className="mt-2.5">Nanti aja</Button>
+                <Button onClick={() => router.push('/dashboard/psikolog')}>{t('chat', 'yellowYes')}</Button>
+                <Button variant="ghost" onClick={handleEndSession} className="mt-2.5">{t('chat', 'yellowLater')}</Button>
               </>
             ) : (
               <>
                 <h2 className="font-boogaloo text-[22px] text-[#1A3448] text-center mb-2">
-                  Makasih udah cerita hari ini.
+                  {t('chat', 'greenTitle')}
                 </h2>
                 <p className="text-sm text-[#6B7280] text-center mb-5 leading-relaxed">
-                  Ngeluarin apa yang ada di kepala itu udah langkah yang besar. Jaga diri ya 💙
+                  {t('chat', 'greenBody')}
                 </p>
-                <Button onClick={handleEndSession}>Selesai</Button>
+                <Button onClick={handleEndSession}>{t('chat', 'finish')}</Button>
               </>
             )}
 
             <Card className="mt-4 p-3.5" style={{ background: '#F0FFF4', border: '1px solid #C6F6D5' } as React.CSSProperties}>
               <p className="m-0 mb-1.5 text-xs font-semibold text-[#2E7D32]">
-                Satu hal yang bisa kamu coba hari ini:
+                {t('chat', 'tipLabel')}
               </p>
               <p className="m-0 text-sm leading-relaxed">
-                Tulis 3 hal yang masih dalam kendalimu terkait masalah ini. ✏️
+                {t('chat', 'tipBody')}
               </p>
             </Card>
 
             <div className="mt-3.5">
-              <ToggleSwitch checked={saveSession} onChange={setSaveSession} label="Simpan sesi ini" />
+              <ToggleSwitch checked={saveSession} onChange={setSaveSession} label={t('chat', 'saveToggle')} />
             </div>
           </div>
         </div>
@@ -347,9 +349,9 @@ export default function ChatPage() {
         <div className="flex items-center gap-2">
           <MinDoraAvatar size={32} />
           <div>
-            <span className="font-boogaloo text-[17px] text-[#1A3448]">Sesi Cerita</span>
+            <span className="font-boogaloo text-[17px] text-[#1A3448]">{t('chat', 'title')}</span>
             {isRestoredSession && (
-              <span className="ml-2 text-[11px] text-[#A8C8D8]">• dilanjutkan</span>
+              <span className="ml-2 text-[11px] text-[#A8C8D8]">• {t('chat', 'continued')}</span>
             )}
           </div>
         </div>
@@ -359,7 +361,7 @@ export default function ChatPage() {
               onClick={startFresh}
               className="text-[11px] text-[#6B7280] bg-transparent border border-[#E5E7EB] rounded-xl px-2 py-1 cursor-pointer font-poppins"
             >
-              Baru
+              {t('chat', 'newSession')}
             </button>
           )}
           <button
@@ -367,7 +369,7 @@ export default function ChatPage() {
             disabled={messages.length <= 1}
             className="text-[11px] text-[#EF5350] bg-transparent border border-[#FFCDD2] rounded-xl px-2.5 py-1 cursor-pointer font-poppins disabled:opacity-30 disabled:cursor-default"
           >
-            Akhiri
+            {t('chat', 'end')}
           </button>
         </div>
       </div>
@@ -377,7 +379,7 @@ export default function ChatPage() {
         {isRestoredSession && (
           <div className="text-center py-2">
             <span className="text-[11px] text-[#9CA3AF] bg-[#F9FAFB] px-3 py-1 rounded-full">
-              Melanjutkan sesi sebelumnya
+              {t('chat', 'restoredBanner')}
             </span>
           </div>
         )}
@@ -403,7 +405,7 @@ export default function ChatPage() {
           <div className="flex gap-2 items-end animate-fade-in">
             <MinDoraAvatar size={32} />
             <div className="px-4 py-3 rounded-[18px_18px_18px_4px] bg-[#EDF4F8] max-w-[78%]">
-              <p className="m-0 mb-2.5 text-sm text-[#1A3448]">Dari 1–5, seberapa berat rasanya?</p>
+              <p className="m-0 mb-2.5 text-sm text-[#1A3448]">{t('chat', 'intensityQuestion')}</p>
               <div className="flex gap-1.5">
                 {[1, 2, 3, 4, 5].map(v => (
                   <button
@@ -440,7 +442,7 @@ export default function ChatPage() {
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage(input)}
-          placeholder="Ketik di sini..."
+          placeholder={t('chat', 'placeholder')}
           className="flex-1 px-4 py-3 rounded-full border-[1.5px] border-[#E5E7EB] bg-[#F9FAFB] text-sm font-poppins outline-none focus:border-[#1A3448] transition-colors"
         />
         <button

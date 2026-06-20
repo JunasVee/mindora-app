@@ -3,46 +3,52 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Card from '@/components/ui/Card';
+import ThemeToggle from '@/components/ui/ThemeToggle';
 import { createClient } from '@/lib/supabase';
+import { checkSubscriptionStatus } from '@/lib/subscription';
+import { useLanguage } from '@/lib/language-context';
 import { getInitial } from '@/lib/utils';
 
-const MENU_SECTIONS = [
-  {
-    title: 'AKUN',
-    items: [
-      { icon: '👤', label: 'Edit Profil', href: '/dashboard/profile/edit' },
-      { icon: '🔑', label: 'Ubah Password', href: '/dashboard/profile/password' },
-      { icon: '🔔', label: 'Notifikasi', href: '/dashboard/notifications' },
-    ],
-  },
-  {
-    title: 'PREMIUM',
-    items: [
-      { icon: '⭐', label: 'Status Langganan', href: '/dashboard/profile/subscription', detail: true },
-      { icon: '💎', label: 'Upgrade / Kelola', href: '/premium' },
-    ],
-  },
-  {
-    title: 'RIWAYAT',
-    items: [
-      { icon: '💬', label: 'Riwayat Sesi', href: '/dashboard/profile/sessions' },
-      { icon: '📊', label: 'Laporan Bulanan', href: '/dashboard/report', premium: true },
-    ],
-  },
-  {
-    title: 'LAINNYA',
-    items: [
-      { icon: '🌐', label: 'Language / Bahasa', href: '/dashboard/profile/language', detail: 'ID' },
-      { icon: 'ℹ️', label: 'About MinDora', href: '/dashboard/profile/about' },
-      { icon: '🔒', label: 'Privacy Policy', href: '/dashboard/profile/privacy' },
-      { icon: '❓', label: 'Help & Support', href: '/dashboard/profile/help' },
-      { icon: '🚪', label: 'Log Out', danger: true, action: 'logout' },
-    ],
-  },
-];
+function buildMenuSections(t: (ns: string, key: string) => string) {
+  return [
+    {
+      title: t('profile', 'account'),
+      items: [
+        { icon: '👤', label: t('profile', 'editProfile'), href: '/dashboard/profile/edit' },
+        { icon: '🔑', label: t('profile', 'changePassword'), href: '/dashboard/profile/password' },
+        { icon: '🔔', label: t('profile', 'notifications'), href: '/dashboard/notifications' },
+      ],
+    },
+    {
+      title: t('profile', 'premiumSection'),
+      items: [
+        { icon: '⭐', label: t('profile', 'subscriptionStatus'), href: '/dashboard/profile/subscription', detail: true },
+        { icon: '💎', label: t('profile', 'upgradeManage'), href: '/premium' },
+      ],
+    },
+    {
+      title: t('profile', 'history'),
+      items: [
+        { icon: '💬', label: t('profile', 'sessionHistory'), href: '/dashboard/profile/sessions' },
+        { icon: '📊', label: t('profile', 'monthlyReport'), href: '/dashboard/report', premium: true },
+      ],
+    },
+    {
+      title: t('profile', 'other'),
+      items: [
+        { icon: '🌐', label: t('profile', 'language'), href: '/dashboard/profile/language' },
+        { icon: 'ℹ️', label: t('profile', 'about'), href: '/dashboard/profile/about' },
+        { icon: '🔒', label: t('profile', 'privacy'), href: '/dashboard/profile/privacy' },
+        { icon: '❓', label: t('profile', 'help'), href: '/dashboard/profile/help' },
+        { icon: '🚪', label: t('profile', 'logout'), danger: true, action: 'logout' },
+      ],
+    },
+  ];
+}
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { t, lang } = useLanguage();
   const [userName, setUserName] = useState('');
   const [isPremium, setIsPremium] = useState(false);
   const [streak, setStreak] = useState(0);
@@ -53,6 +59,8 @@ export default function ProfilePage() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.replace('/auth/login'); return; }
+
+      checkSubscriptionStatus(user.id);
 
       const { data: profile } = await supabase
         .from('profiles')
@@ -85,13 +93,14 @@ export default function ProfilePage() {
   };
 
   const level = Math.floor(sessionCount / 5) + 1;
+  const menuSections = buildMenuSections(t);
 
   return (
     <div className="flex-1 overflow-auto scrollbar-none">
       <div className="h-11" />
 
       <div className="px-5 pb-3">
-        <h1 className="font-boogaloo text-[28px] text-[#1A3448] m-0">Profil</h1>
+        <h1 className="font-boogaloo text-[28px] text-[#1A3448] m-0">{t('profile', 'title')}</h1>
       </div>
 
       <div className="px-5 pb-5 flex flex-col gap-4">
@@ -113,15 +122,15 @@ export default function ProfilePage() {
             }}
           >
             {isPremium && <span>👑</span>}
-            {isPremium ? 'Premium' : 'Free'}
+            {isPremium ? t('profile', 'premium') : t('profile', 'free')}
           </div>
 
           {/* Stats */}
           <div className="flex justify-center gap-5 mt-4">
             {[
-              { icon: '🔥', val: `${streak} hari`, label: 'Streak' },
-              { icon: '💬', val: sessionCount.toString(), label: 'Sesi' },
-              { icon: '📊', val: `Level ${level}`, label: 'Level' },
+              { icon: '🔥', val: `${streak}`, label: t('profile', 'streak') },
+              { icon: '💬', val: sessionCount.toString(), label: t('profile', 'sessions') },
+              { icon: '📊', val: `${level}`, label: t('profile', 'level') },
             ].map((s, i) => (
               <div key={i} className="text-center">
                 <span className="text-base">{s.icon}</span>
@@ -132,8 +141,18 @@ export default function ProfilePage() {
           </div>
         </Card>
 
+        {/* Theme toggle — standalone, applies instantly across the whole app */}
+        <div>
+          <p className="text-xs font-semibold text-[#6B7280] uppercase tracking-wide mb-2 ml-1">
+            {t('profile', 'appearance')}
+          </p>
+          <Card className="p-0 overflow-hidden">
+            <ThemeToggle />
+          </Card>
+        </div>
+
         {/* Menu sections */}
-        {MENU_SECTIONS.map((section, si) => (
+        {menuSections.map((section, si) => (
           <div key={si}>
             <p className="text-xs font-semibold text-[#6B7280] uppercase tracking-wide mb-2 ml-1">
               {section.title}
@@ -160,11 +179,11 @@ export default function ProfilePage() {
                   </span>
                   {(item as any).detail === true && (
                     <span className="text-[13px] text-[#6B7280] mr-1">
-                      {isPremium ? 'Aktif' : 'Free'}
+                      {isPremium ? t('profile', 'premium') : t('profile', 'free')}
                     </span>
                   )}
-                  {typeof (item as any).detail === 'string' && (
-                    <span className="text-[13px] text-[#6B7280] mr-1">{(item as any).detail}</span>
+                  {(item as any).href === '/dashboard/profile/language' && (
+                    <span className="text-[13px] text-[#6B7280] mr-1">{lang.toUpperCase()}</span>
                   )}
                   {(item as any).premium && !isPremium && <span className="text-xs">🔒</span>}
                   {!(item as any).danger && (

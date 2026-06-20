@@ -13,7 +13,7 @@ interface AppHeaderProps {
 
 export default function AppHeader({ title, onBack, showBack = true, rightAction, light = false }: AppHeaderProps) {
   const router = useRouter();
-  const color = light ? '#fff' : '#1A3448';
+  const color = light ? '#fff' : 'var(--dm-text-primary)';
 
   const handleBack = () => {
     if (onBack) onBack();

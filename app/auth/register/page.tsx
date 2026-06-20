@@ -7,6 +7,7 @@ import { MinDoraIcon } from '@/components/Logo';
 import InputField from '@/components/ui/InputField';
 import Button from '@/components/ui/Button';
 import { createClient } from '@/lib/supabase';
+import { useLanguage } from '@/lib/language-context';
 
 function checkPassword(pw: string) {
   return {
@@ -17,35 +18,36 @@ function checkPassword(pw: string) {
   };
 }
 
-const REQUIREMENTS = [
-  { key: 'length' as const, label: 'Minimal 8 karakter' },
-  { key: 'upper'  as const, label: 'Minimal 1 huruf kapital (A-Z)' },
-  { key: 'lower'  as const, label: 'Minimal 1 huruf kecil (a-z)' },
-  { key: 'number' as const, label: 'Minimal 1 angka (0-9)' },
-];
-
 export default function RegisterPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
 
+  const REQUIREMENTS = [
+    { key: 'length' as const, label: t('register', 'reqLength') },
+    { key: 'upper'  as const, label: t('register', 'reqUpper') },
+    { key: 'lower'  as const, label: t('register', 'reqLower') },
+    { key: 'number' as const, label: t('register', 'reqNumber') },
+  ];
+
   const pwChecks = useMemo(() => checkPassword(form.password), [form.password]);
   const pwValid = Object.values(pwChecks).every(Boolean);
 
   const handleRegister = async () => {
     if (!form.name || !form.email || !form.password || !form.confirm) {
-      setError('Semua kolom wajib diisi.');
+      setError(t('register', 'errorRequired'));
       return;
     }
     if (!pwValid) {
-      setError('Password belum memenuhi semua persyaratan.');
+      setError(t('register', 'errorWeak'));
       return;
     }
     if (form.password !== form.confirm) {
-      setError('Konfirmasi password tidak cocok.');
+      setError(t('register', 'errorMismatch'));
       return;
     }
 
@@ -66,7 +68,7 @@ export default function RegisterPage() {
     if (authError) {
       if (authError.message.toLowerCase().includes('already registered') ||
           authError.message.toLowerCase().includes('already exists')) {
-        setError('Email sudah terdaftar. Coba masuk ya.');
+        setError(t('register', 'errorExists'));
       } else {
         setError(`Gagal mendaftar: ${authError.message}`);
       }
@@ -94,25 +96,18 @@ export default function RegisterPage() {
     return (
       <div className="mobile-shell bg-white flex flex-col items-center justify-center px-8 text-center gap-5">
         <span className="text-7xl">📬</span>
-        <h2 className="font-boogaloo text-[28px] text-[#1A3448]">Cek emailmu!</h2>
+        <h2 className="font-boogaloo text-[28px] text-[#1A3448]">{t('register', 'confirmTitle')}</h2>
         <p className="text-sm text-[#6B7280] leading-relaxed">
-          Kami kirim link konfirmasi ke <strong>{form.email}</strong>.
-          Klik link tersebut, lalu kembali ke sini untuk masuk.
+          {t('register', 'confirmBody')} (<strong>{form.email}</strong>)
         </p>
-        <div
-          className="w-full px-4 py-3.5 rounded-2xl text-sm text-[#6B7280] leading-relaxed text-left"
-          style={{ background: '#FFF9F0', border: '1px solid #F5E6D3' }}
-        >
-          💡 <strong>Tip:</strong> Tidak dapat email? Cek folder spam, atau hubungi kami.
-        </div>
         <Button onClick={() => router.push('/auth/login')}>
-          Sudah konfirmasi? Masuk
+          {t('register', 'backToLogin')}
         </Button>
         <button
           onClick={() => setAwaitingConfirmation(false)}
           className="text-sm text-[#6B7280] bg-transparent border-none cursor-pointer font-poppins"
         >
-          Kembali
+          ← {t('register', 'title')}
         </button>
       </div>
     );
@@ -127,21 +122,21 @@ export default function RegisterPage() {
         </div>
 
         <h2 className="font-boogaloo text-[28px] text-[#1A3448] text-center mb-6">
-          Buat Akun
+          {t('register', 'title')}
         </h2>
 
         <div className="flex flex-col gap-3.5">
           <InputField
-            label="Nama"
-            placeholder="Nama lengkap kamu"
+            label={t('register', 'name')}
+            placeholder={t('register', 'namePlaceholder')}
             value={form.name}
             onChange={e => setForm({ ...form, name: e.target.value })}
             autoComplete="name"
           />
           <InputField
-            label="Email"
+            label={t('register', 'email')}
             type="email"
-            placeholder="email@contoh.com"
+            placeholder={t('register', 'emailPlaceholder')}
             value={form.email}
             onChange={e => setForm({ ...form, email: e.target.value })}
             autoComplete="email"
@@ -150,9 +145,9 @@ export default function RegisterPage() {
           {/* Password with live requirements */}
           <div>
             <InputField
-              label="Password"
+              label={t('register', 'password')}
               type="password"
-              placeholder="Min. 8 karakter"
+              placeholder={t('register', 'passwordPlaceholder')}
               value={form.password}
               onChange={e => setForm({ ...form, password: e.target.value })}
               autoComplete="new-password"
@@ -180,15 +175,15 @@ export default function RegisterPage() {
           </div>
 
           <InputField
-            label="Konfirmasi Password"
+            label={t('register', 'confirm')}
             type="password"
-            placeholder="Ulangi password"
+            placeholder={t('register', 'confirmPlaceholder')}
             value={form.confirm}
             onChange={e => setForm({ ...form, confirm: e.target.value })}
             autoComplete="new-password"
           />
           {form.confirm.length > 0 && form.password !== form.confirm && (
-            <p className="text-[12px] text-red-500 -mt-2 ml-1">Password tidak cocok.</p>
+            <p className="text-[12px] text-red-500 -mt-2 ml-1">{t('register', 'errorMismatch')}</p>
           )}
         </div>
 
@@ -198,13 +193,13 @@ export default function RegisterPage() {
 
         <div className="mt-6">
           <Button onClick={handleRegister} disabled={loading}>
-            {loading ? 'Mendaftar...' : 'Daftar'}
+            {loading ? t('register', 'signingUp') : t('register', 'signUp')}
           </Button>
         </div>
 
         <div className="flex items-center gap-3 my-5">
           <div className="flex-1 h-px bg-[#E5E7EB]" />
-          <span className="text-[13px] text-gray-400">atau</span>
+          <span className="text-[13px] text-gray-400">{t('register', 'or')}</span>
           <div className="flex-1 h-px bg-[#E5E7EB]" />
         </div>
 
@@ -213,13 +208,13 @@ export default function RegisterPage() {
           className="w-full py-3.5 flex items-center justify-center gap-2.5 bg-white border-[1.5px] border-[#E5E7EB] rounded-2xl cursor-pointer font-poppins text-[15px] text-[#1A3448] hover:bg-gray-50 transition-colors"
         >
           <GoogleIcon />
-          Lanjut dengan Google
+          {t('register', 'google')}
         </button>
 
         <p className="text-center mt-4 text-sm text-[#6B7280]">
-          Sudah punya akun?{' '}
+          {t('register', 'haveAccount')}{' '}
           <Link href="/auth/login" className="text-[#1A3448] font-semibold no-underline">
-            Masuk
+            {t('register', 'login')}
           </Link>
         </p>
       </div>

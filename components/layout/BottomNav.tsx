@@ -63,6 +63,7 @@ export default function BottomNav() {
     <nav className="flex border-t border-gray-200 bg-white pb-5 pt-2 flex-shrink-0">
       {tabs.map(tab => {
         const active = isActive(tab.href);
+        const color = active ? 'var(--dm-text-primary)' : 'var(--dm-text-tertiary)';
         return (
           <Link
             key={tab.id}
@@ -72,8 +73,8 @@ export default function BottomNav() {
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
               <path
                 d={tab.icon}
-                fill={tab.strokeIcon ? 'none' : (active ? '#1A3448' : '#9CA3AF')}
-                stroke={tab.strokeIcon ? (active ? '#1A3448' : '#9CA3AF') : 'none'}
+                fill={tab.strokeIcon ? 'none' : color}
+                stroke={tab.strokeIcon ? color : 'none'}
                 strokeWidth={tab.strokeIcon ? 1.5 : 0}
               />
             </svg>
@@ -81,7 +82,7 @@ export default function BottomNav() {
               className="font-poppins text-[11px]"
               style={{
                 fontWeight: active ? 600 : 400,
-                color: active ? '#1A3448' : '#9CA3AF',
+                color,
               }}
             >
               {tab.label}

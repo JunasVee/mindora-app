@@ -55,9 +55,14 @@ export async function POST(req: NextRequest) {
         .ilike('id', `${userSlice}%`);
 
       if (profiles && profiles.length === 1) {
+        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
         await supabase
           .from('profiles')
-          .update({ is_premium: true })
+          .update({
+            is_premium: true,
+            subscription_expires_at: expiresAt,
+            expiry_notified_at: null,
+          })
           .eq('id', profiles[0].id);
       }
     }

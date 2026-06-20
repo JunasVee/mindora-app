@@ -5,28 +5,26 @@ import { useRouter } from 'next/navigation';
 import AppHeader from '@/components/layout/AppHeader';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import { useLanguage } from '@/lib/language-context';
+import type { Lang } from '@/lib/i18n';
 
-const LANGUAGES = [
-  { code: 'id', label: 'Bahasa Indonesia', flag: '🇮🇩', available: true },
-  { code: 'en', label: 'English',          flag: '🇬🇧', available: false },
+const LANGUAGES: { code: Lang; label: string; symbol: string; available: boolean }[] = [
+  { code: 'id', label: 'Bahasa Indonesia', symbol: 'ID', available: true },
+  { code: 'en', label: 'English',          symbol: 'EN', available: true },
 ];
-
-const STORAGE_KEY = 'mindora_language';
 
 export default function LanguagePage() {
   const router = useRouter();
-  const [selected, setSelected] = useState('id');
+  const { lang, setLang } = useLanguage();
+  const [selected, setSelected] = useState<Lang>('id');
   const [saved, setSaved] = useState(false);
 
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) setSelected(stored);
-  }, []);
+  useEffect(() => { setSelected(lang); }, [lang]);
 
   const handleSave = () => {
-    localStorage.setItem(STORAGE_KEY, selected);
+    setLang(selected);
     setSaved(true);
-    setTimeout(() => router.back(), 1000);
+    setTimeout(() => router.back(), 800);
   };
 
   return (
@@ -36,39 +34,33 @@ export default function LanguagePage() {
 
       <div className="px-5 pb-8 flex flex-col gap-5">
         <p className="text-sm text-[#6B7280] leading-relaxed">
-          Pilih bahasa tampilan aplikasi MinDora.
+          Pilih bahasa tampilan aplikasi MinDora. Perubahan berlaku langsung di semua halaman.
         </p>
 
         <div className="flex flex-col gap-2">
-          {LANGUAGES.map(lang => (
+          {LANGUAGES.map(l => (
             <button
-              key={lang.code}
-              onClick={() => lang.available && setSelected(lang.code)}
+              key={l.code}
+              onClick={() => l.available && setSelected(l.code)}
               className="bg-transparent border-none p-0 cursor-pointer text-left"
-              disabled={!lang.available}
+              disabled={!l.available}
             >
               <Card
                 className="p-4 flex items-center gap-4 transition-all"
-                style={selected === lang.code ? { borderColor: '#1A3448', borderWidth: 2 } as React.CSSProperties : undefined}
+                style={selected === l.code ? { borderColor: '#1A3448', borderWidth: 2 } as React.CSSProperties : undefined}
               >
-                <span className="text-2xl">{lang.flag}</span>
-                <div className="flex-1">
-                  <p className="m-0 text-sm font-semibold text-[#1A3448]">{lang.label}</p>
-                  {!lang.available && (
-                    <p className="m-0 text-[12px] text-[#9CA3AF]">Segera hadir</p>
-                  )}
+                <div className="w-9 h-9 rounded-lg bg-[#EDF4F8] flex items-center justify-center flex-shrink-0">
+                  <span className="text-[12px] font-bold text-[#1A3448]">{l.symbol}</span>
                 </div>
-                {selected === lang.code && (
+                <div className="flex-1">
+                  <p className="m-0 text-sm font-semibold text-[#1A3448]">{l.label}</p>
+                </div>
+                {selected === l.code && (
                   <div className="w-5 h-5 rounded-full bg-[#1A3448] flex items-center justify-center flex-shrink-0">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
                       <path d="M5 12l5 5L20 7" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </div>
-                )}
-                {!lang.available && (
-                  <span className="text-[11px] bg-[#F3F4F6] text-[#6B7280] px-2 py-0.5 rounded-full">
-                    Soon
-                  </span>
                 )}
               </Card>
             </button>

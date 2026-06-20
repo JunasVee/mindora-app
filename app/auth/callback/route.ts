@@ -4,11 +4,14 @@ import { createServerSupabaseClient } from '@/lib/supabase-server';
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
+  const next = searchParams.get('next');
 
   if (code) {
     const supabase = await createServerSupabaseClient();
     await supabase.auth.exchangeCodeForSession(code);
   }
 
-  return NextResponse.redirect(`${origin}/dashboard`);
+  // `next` lets callers (e.g. password reset emails) route past dashboard
+  // into a specific follow-up page once the session is established.
+  return NextResponse.redirect(`${origin}${next && next.startsWith('/') ? next : '/dashboard'}`);
 }

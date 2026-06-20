@@ -7,6 +7,7 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { generateForecast } from '@/lib/forecast';
 import { createClient } from '@/lib/supabase';
+import { checkSubscriptionStatus } from '@/lib/subscription';
 import type { Emotion } from '@/types';
 
 interface MoodEntry {
@@ -55,6 +56,10 @@ export default function ForecastPage() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.replace('/auth/login'); return; }
+
+      // Await here (unlike other gate points) — this page's premium check
+      // depends directly on the freshly-expired result, not just a display flag.
+      await checkSubscriptionStatus(user.id);
 
       const { data: profile } = await supabase
         .from('profiles')

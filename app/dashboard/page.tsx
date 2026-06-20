@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Card from '@/components/ui/Card';
 import { createClient } from '@/lib/supabase';
+import { checkSubscriptionStatus } from '@/lib/subscription';
+import { useLanguage } from '@/lib/language-context';
 import { formatDateID, getEmotionEmoji } from '@/lib/utils';
 import type { Emotion } from '@/types';
 
@@ -24,6 +26,7 @@ const TIPS = [
 
 export default function HomePage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [userName, setUserName] = useState('');
   const [isPremium, setIsPremium] = useState(false);
   const [streak, setStreak] = useState(0);
@@ -36,6 +39,8 @@ export default function HomePage() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.replace('/auth/login'); return; }
+
+      checkSubscriptionStatus(user.id);
 
       const { data: profile } = await supabase
         .from('profiles')
@@ -71,7 +76,7 @@ export default function HomePage() {
         {/* Greeting */}
         <div>
           <h1 className="font-boogaloo text-[26px] text-[#1A3448] m-0 mb-1">
-            Hei, {userName || '...'} 👋
+            {t('dashboard', 'greeting')} {userName || '...'} 👋
           </h1>
           <p className="text-[13px] text-[#6B7280] m-0">{today}</p>
         </div>
@@ -82,7 +87,7 @@ export default function HomePage() {
           style={{ background: 'linear-gradient(135deg, #1A3448, #2A4A60)' }}
         >
           <p className="text-[#A8C8D8] text-sm mb-3.5 font-medium m-0">
-            Gimana kondisimu hari ini?
+            {t('dashboard', 'checkinPrompt')}
           </p>
           <div className="flex justify-between gap-1">
             {QUICK_MOODS.map((m, i) => (
@@ -115,8 +120,8 @@ export default function HomePage() {
               <span className="text-2xl">💬</span>
             </div>
             <div className="flex-1">
-              <h3 className="m-0 mb-1 text-base font-semibold text-[#1A3448]">Mulai Sesi Cerita</h3>
-              <p className="m-0 text-[13px] text-[#6B7280]">Ceritakan apa yang ada di pikiranmu</p>
+              <h3 className="m-0 mb-1 text-base font-semibold text-[#1A3448]">{t('dashboard', 'startSession')}</h3>
+              <p className="m-0 text-[13px] text-[#6B7280]">{t('dashboard', 'startSessionSub')}</p>
             </div>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
               <path d="M9 18l6-6-6-6" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" />
@@ -131,9 +136,9 @@ export default function HomePage() {
               <span className="text-3xl">🔥</span>
               <div>
                 <p className="m-0 text-[15px] font-semibold text-[#1A3448]">
-                  {streak} hari check-in berturut-turut
+                  {streak} {t('dashboard', 'streakLabel')}
                 </p>
-                <p className="m-0 text-[13px] text-[#6B7280]">Terus konsisten ya!</p>
+                <p className="m-0 text-[13px] text-[#6B7280]">{t('dashboard', 'streakSub')}</p>
               </div>
             </div>
           </Card>
@@ -145,7 +150,7 @@ export default function HomePage() {
           style={{ background: '#FFF9F0', border: '1px solid #F5E6D3' }}
         >
           <p className="m-0 mb-1.5 text-[12px] font-semibold text-[#C4A98A] uppercase tracking-wide">
-            Tip Hari Ini
+            {t('dashboard', 'tipTitle')}
           </p>
           <p className="m-0 text-sm text-[#1A3448] leading-relaxed">{todayTip}</p>
         </div>
@@ -160,10 +165,10 @@ export default function HomePage() {
             >
               <div className="flex items-center gap-2 mb-2.5">
                 <span className="text-lg">🔮</span>
-                <h3 className="m-0 text-[15px] font-semibold text-[#1A3448]">Mood Forecast Minggu Ini</h3>
+                <h3 className="m-0 text-[15px] font-semibold text-[#1A3448]">{t('dashboard', 'forecastTitle')}</h3>
               </div>
               <p className="m-0 text-[13px] text-[#6B7280] leading-relaxed">
-                Minggu ini kamu mungkin lebih rentan Rabu–Kamis. MinDora udah siapkan sesi untukmu. 🟡
+                {t('dashboard', 'forecastBody')} 🟡
               </p>
             </Card>
 
@@ -173,7 +178,7 @@ export default function HomePage() {
             >
               <div className="flex items-center gap-2 mb-2.5">
                 <span className="text-lg">📊</span>
-                <h3 className="m-0 text-[15px] font-semibold text-[#1A3448]">Laporan Bulanmu</h3>
+                <h3 className="m-0 text-[15px] font-semibold text-[#1A3448]">{t('dashboard', 'reportTitle')}</h3>
               </div>
               <div className="flex gap-1 mb-2">
                 {[40, 55, 35, 60, 45, 50, 65].map((h, i) => (
@@ -187,7 +192,7 @@ export default function HomePage() {
                   />
                 ))}
               </div>
-              <p className="m-0 text-xs text-[#6B7280]">Lihat detail →</p>
+              <p className="m-0 text-xs text-[#6B7280]">{t('dashboard', 'reportLink')}</p>
             </Card>
           </>
         ) : (
@@ -196,14 +201,14 @@ export default function HomePage() {
             onClick={() => router.push('/premium')}
           >
             <div className="absolute top-3 right-3 bg-[#1A3448] rounded-lg px-2.5 py-1 text-[11px] text-white font-semibold">
-              PREMIUM
+              {t('dashboard', 'premiumBadge')}
             </div>
             <div className="flex items-center gap-3">
               <span className="text-3xl">🔮</span>
               <div>
-                <h3 className="m-0 mb-1 text-[15px] font-semibold text-[#1A3448]">🔒 Mood Forecast</h3>
+                <h3 className="m-0 mb-1 text-[15px] font-semibold text-[#1A3448]">{t('dashboard', 'forecastLockedTitle')}</h3>
                 <p className="m-0 text-[13px] text-[#6B7280]">
-                  Prediksi mood mingguanmu. Upgrade untuk akses.
+                  {t('dashboard', 'forecastLockedBody')}
                 </p>
               </div>
             </div>

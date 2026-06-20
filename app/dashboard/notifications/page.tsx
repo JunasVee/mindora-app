@@ -15,12 +15,14 @@ interface NotifItem {
 }
 
 const TYPE_ICON: Record<string, string> = {
-  checkin_reminder: '🌤️',
-  forecast_alert:   '🟡',
-  booking_confirmed:'✅',
-  session_reminder: '💬',
-  streak_achieved:  '🎉',
-  report_ready:     '💙',
+  checkin_reminder:     '🌤️',
+  forecast_alert:       '🟡',
+  booking_confirmed:    '✅',
+  session_reminder:     '💬',
+  streak_achieved:      '🎉',
+  report_ready:         '💙',
+  subscription_expiring:'⏳',
+  subscription_expired: '🔒',
 };
 
 function timeAgo(dateStr: string) {
